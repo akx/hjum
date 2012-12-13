@@ -1,0 +1,7 @@
+tl;dr:
+
+* install textile and markdown for Python
+* ``python -m hjum.cmd --init myproject``
+* add files in myproject/content, such as ``test.md`` and ``test2.tx``
+* ``python -m hjum.cmd myproject``
+* pow! baked HTML in ``myproject/output``
