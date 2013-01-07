@@ -4,7 +4,7 @@ import codecs
 import hashlib
 import os
 import re
-import posixpath
+import posixpath	
 import logging
 
 header_re = re.compile("<h([1-6])>(.+?)<", re.I)
@@ -14,7 +14,7 @@ log = logging.getLogger("Page")
 class Page(object):
 	def __init__(self, project, name, source_filename):
 		self.project = project
-		self.name = name
+		self.name = (name or "index")
 		self.basename = name.split("/")[-1]
 		self.source_filename = source_filename
 		self.target_filename = (self.name or "index") + ".html"
@@ -45,10 +45,7 @@ class Page(object):
 		if not renderer_class:
 			raise ValueError("Could not find renderer for page %r (extension %s)" % (self.name, self.extension))
 		renderer = renderer_class(project=self.project)
-		self.rendered_content = self.project.rewrite_links(self, renderer.render_to_html(page=self))
-
-		if isinstance(self.rendered_content, unicode):
-			self.rendered_content = self.rendered_content.encode("UTF-8")
+		self.rendered_content = renderer.render_to_html(page=self)
 		self.rendered_with_template = self.project.wrap_in_template(self)
 
 	def write(self, force=False):
@@ -60,7 +57,9 @@ class Page(object):
 			with file(target_filename, "rb") as in_f:
 				orig_hash = hashlib.md5(in_f.read()).hexdigest()
 		
-		curr_hash = hashlib.md5(self.rendered_with_template).hexdigest()
+		byte_content = self.rendered_with_template.encode("UTF-8")
+
+		curr_hash = hashlib.md5(byte_content).hexdigest()
 
 		if orig_hash != curr_hash:
 			target_dir = os.path.dirname(target_filename)
@@ -68,7 +67,7 @@ class Page(object):
 				os.makedirs(target_dir)
 			log.info("Writing page %s to %s", self.name, target_filename)
 			with file(target_filename, "wb") as out_f:
-				out_f.write(self.rendered_with_template)
+				out_f.write(byte_content)
 			return True
 		else:
 			return False

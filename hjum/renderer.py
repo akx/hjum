@@ -67,4 +67,4 @@ class MarkdownRenderer(Renderer):
 
 		return markdown.markdown(page.source, output_format="html5")
 
-renderer_registry.register("md", MarkdownRenderer)		
+renderer_registry.register(("md", "mdown"), MarkdownRenderer)

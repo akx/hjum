@@ -59,7 +59,7 @@ class Project(object):
 		template = self.jinja_env.get_template(page.template_name + ".jinja2")
 		static_path = "/".join(([".."] * page.name.count("/")) + ["static"])
 
-		return template.render({
+		html = template.render({
 			"content": jinja2.Markup(page.rendered_content),
 			"page": page,
 			"parent": page.parent,
@@ -71,6 +71,9 @@ class Project(object):
 			"url": page.target_filename,
 			"top_level_pages": self.top_level_pages,
 		})
+
+		html = self.rewrite_links(page, html)
+		return html
 
 	def find_link_page(self, page, loc):
 		ret_page = self.pages.get(loc)
@@ -98,8 +101,8 @@ class Project(object):
 				other_page = self.find_link_page(page, loc)
 				if other_page:
 					loc = page.relative_url(other_page)
-				else:
-					logging.warn("Unable to rewrite link %s on page %s, no page could be found: %r", match.group(0), page.name, try_names)
+				#else:
+				#	logging.warn("Unable to rewrite link %s on page %s, no page could be found: %r", match.group(0), page.name, try_names)
 			return "%s=\"%s\"" % (attr, loc)
 			
 		return ref_re.sub(rewrite_link, content)
