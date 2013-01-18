@@ -5,10 +5,15 @@ import re
 import urlparse
 import logging
 import shutil
+from hjum.gallery import render_gallery
 
 ref_re = re.compile(r"""(href|src)=['"]?(.+?)['">]""", re.I)
 
 log = logging.getLogger("Project")
+
+DEFAULT_ENV = {
+	"render_gallery": render_gallery
+}
 
 class Project(object):
 	def __init__(self, base_path):
@@ -21,6 +26,7 @@ class Project(object):
 		self.jinja_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(self.template_path))
 		self.pages = {}
 		self.top_level_pages = []
+		self.default_env = {}
 
 	def init(self):
 		for dir in (self.template_path, self.content_path, self.static_path, self.output_path, self.output_static_path):
@@ -55,12 +61,13 @@ class Project(object):
 				source_filename = os.path.join(dirpath, filename)
 				yield Page(self, name, source_filename)
 
-	def wrap_in_template(self, page):
-		template = self.jinja_env.get_template(page.template_name + ".jinja2")
+	def get_page_context(self, page):
 		static_path = "/".join(([".."] * page.name.count("/")) + ["static"])
-
-		html = template.render({
-			"content": jinja2.Markup(page.rendered_content),
+		env = {}
+		env.update(DEFAULT_ENV)
+		env.update(self.default_env)
+		env.update({
+			"content": jinja2.Markup(getattr(page, "rendered_content", "")),
 			"page": page,
 			"parent": page.parent,
 			"project": self,
@@ -71,7 +78,20 @@ class Project(object):
 			"url": page.target_filename,
 			"top_level_pages": self.top_level_pages,
 		})
+		return env
 
+	def preprocess_page_content(self, page):
+		if "{{" in page.source or "{%" in page.source or "{#" in page.source:
+			page_template = self.jinja_env.from_string(page.source)
+			env = self.get_page_context(page)
+			return page_template.render(env)
+		else:
+			return page.source
+
+	def wrap_in_template(self, page):
+		template = self.jinja_env.get_template(page.template_name + ".jinja2")
+		env = self.get_page_context(page)
+		html = template.render(env)
 		html = self.rewrite_links(page, html)
 		return html
 

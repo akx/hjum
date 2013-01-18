@@ -25,12 +25,12 @@ class Renderer(object):
 	def __init__(self, project):
 		self.project = project
 
-	def render_to_html(self, page):
+	def render_to_html(self, page, source):
 		raise NotImplementedError("Not implemented")
 
 class RawRenderer(Renderer):
-	def render_to_html(self):
-		return self.page
+	def render_to_html(self, page, source):
+		return source
 
 
 renderer_registry.register(("html", "htm"), RawRenderer)
@@ -47,11 +47,11 @@ def import_if_available(module_name):
 textile, textile_error = import_if_available("textile")
 
 class TextileRenderer(Renderer):
-	def render_to_html(self, page):
+	def render_to_html(self, page, source):
 		if not textile:
 			raise ValueError("Textile rendering not available: %s" % textile_error)
 
-		return textile.textile(page.source)
+		return textile.textile(source)
 
 renderer_registry.register("tx", TextileRenderer)
 
@@ -61,10 +61,10 @@ renderer_registry.register("tx", TextileRenderer)
 markdown, markdown_error = import_if_available("markdown")
 
 class MarkdownRenderer(Renderer):
-	def render_to_html(self, page):
+	def render_to_html(self, page, source):
 		if not markdown:
 			raise ValueError("Markdown rendering not available: %s" % markdown_error)
 
-		return markdown.markdown(page.source, output_format="html5")
+		return markdown.markdown(source, output_format="html5", extensions=['extra'])
 
 renderer_registry.register(("md", "mdown"), MarkdownRenderer)

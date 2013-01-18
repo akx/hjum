@@ -45,7 +45,8 @@ class Page(object):
 		if not renderer_class:
 			raise ValueError("Could not find renderer for page %r (extension %s)" % (self.name, self.extension))
 		renderer = renderer_class(project=self.project)
-		self.rendered_content = renderer.render_to_html(page=self)
+		source = self.project.preprocess_page_content(self)
+		self.rendered_content = renderer.render_to_html(page=self, source=source)
 		self.rendered_with_template = self.project.wrap_in_template(self)
 
 	def write(self, force=False):
@@ -87,7 +88,8 @@ class Page(object):
 		return [(int(m.group(1)), m.group(2)) for m in header_re.finditer(self.rendered_content)]
 
 	def get_title(self):
-		assert self.rendered_content
+		if not self.rendered_content:
+			return ""
 		title = self.flags.get("title")
 		if title and isinstance(title, basestring):
 			return title
